@@ -2,7 +2,13 @@ const got = require('got');
 const cheerio = require('cheerio');
 
 export default async (req, res) => {
-  const url = encodeURI(`https://www.oxfordlearnersdictionaries.com/definition/english/${req.query.word.replaceAll(" ", "-")}`);
+  console.log(`req.query.word: '${JSON.stringify(req.query?.word)}'`);
+  const word = req.query?.word
+  if (word === undefined) {
+    res.status(403).json({});
+    return;
+  }
+  const url = encodeURI(`https://www.oxfordlearnersdictionaries.com/definition/english/${word}`);
   const response = await got(url);
   const $ = cheerio.load(response.body);
 
