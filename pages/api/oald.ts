@@ -42,7 +42,7 @@ export default async (req, res) => {
   const phoneticSpelling = $(".webtop>.phonetics .phons_n_am .phon").text()?.trim();
   const pronunciation = new Pronunciation(phoneticSpelling, audioFile)
 
-  const senses = $(".entry>.senses_multiple .sense").map((_, el) => {
+  const senses = $(".entry>.senses_multiple .sense,.entry>.sense_single .sense").map((_, el) => {
     const $$ = cheerio.load(el);
 
     const definition = $$(".def").text()?.trim();
