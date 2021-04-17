@@ -19,7 +19,7 @@ export default async (req, res) => {
     res.status(405).send("");
     return;
   }
-  const word = req.body?.word.replace(/ /g, '-');
+  const word = req.body?.word.replace(/ /g, '-').toLowerCase();
   if (word === undefined) {
     res.status(403).send("word is required");
     return;
