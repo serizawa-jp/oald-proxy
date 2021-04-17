@@ -1,17 +1,42 @@
+import NextCors from 'nextjs-cors';
+
 const got = require('got');
 const cheerio = require('cheerio');
 
+const capitalize = (s) => {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 export default async (req, res) => {
-  console.log(`req.query.word: '${JSON.stringify(req.query?.word)}'`);
-  const word = req.query?.word
-  if (word === undefined) {
-    res.status(403).json({});
+  await NextCors(req, res, {
+    methods: ['GET', 'HEAD', 'POST'],
+    origin: '*',
+    optionsSuccessStatus: 200,
+  });
+
+  if (req.method !== 'POST') {
+    res.status(405).send("");
     return;
   }
-  const url = encodeURI(`https://www.oxfordlearnersdictionaries.com/definition/english/${word}`);
-  const response = await got(url);
-  const $ = cheerio.load(response.body);
+  const word = req.body?.word.replace(/ /g, '-');
+  if (word === undefined) {
+    res.status(403).send("word is required");
+    return;
+  }
 
+  const url = encodeURI(`https://www.oxfordlearnersdictionaries.com/definition/english/${word}`);
+
+  let response = null;
+
+  try {
+    response = await got(url);
+  } catch(e) {
+    res.status(404).send("");
+    return;
+  }
+
+  const $ = cheerio.load(response.body);
   const id = response.requestUrl.substring(response.requestUrl.lastIndexOf('/') + 1);
   const audioFile = $(".webtop>.phonetics .phons_n_am .sound").data("src-mp3")?.trim();
   const phoneticSpelling = $(".webtop>.phonetics .phons_n_am .phon").text()?.trim();
@@ -21,14 +46,14 @@ export default async (req, res) => {
     const $$ = cheerio.load(el);
 
     const definition = $$(".def").text()?.trim();
-    const examples = $$(".examples>li").map((_, el) => cheerio.load(el).text()).get();
+    const examples = $$(".examples>li").map((_, el) => cheerio.load(el).text().trim()).get();
     return new Sense([definition], examples);
   }).get();
 
   const entry = new Entry([pronunciation], senses)
-  const lexicalCategory = $(".webtop>.pos").text()?.trim()
+  const lexicalCategory = $(".webtop>.pos").text()?.trim();
   const lexicalEntries = [
-    new LexicalEntry([entry], lexicalCategory),
+    new LexicalEntry([entry], capitalize(lexicalCategory)),
   ];
   const resp = new Result(id, response.requestUrl, lexicalEntries)
   res.status(200).json(resp)
